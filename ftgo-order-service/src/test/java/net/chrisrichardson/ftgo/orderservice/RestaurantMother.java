@@ -6,7 +6,9 @@ import net.chrisrichardson.ftgo.orderservice.domain.MenuItem;
 import net.chrisrichardson.ftgo.orderservice.domain.Restaurant;
 import net.chrisrichardson.ftgo.orderservice.messaging.RestaurantEventMapper;
 import net.chrisrichardson.ftgo.restaurantservice.events.Menu;
+import net.chrisrichardson.ftgo.restaurantservice.events.Menu__1;
 import net.chrisrichardson.ftgo.restaurantservice.events.RestaurantCreated;
+import net.chrisrichardson.ftgo.restaurantservice.events.RestaurantMenuRevised;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +31,11 @@ public class RestaurantMother {
 
   public static RestaurantCreated makeAjantaRestaurantCreatedEvent() {
     return new RestaurantCreated().withName(AJANTA_RESTAURANT_NAME)
-            .withAddress(RestaurantEventMapper.fromAddress(RESTAURANT_ADDRESS))
-            .withMenu(new Menu().withMenuItems(RestaurantEventMapper.fromMenuItems(AJANTA_RESTAURANT_MENU_ITEMS)));
+                                  .withAddress(RestaurantEventMapper.fromAddress(RESTAURANT_ADDRESS))
+                                  .withMenu(new Menu().withMenuItems(RestaurantEventMapper.fromMenuItems(AJANTA_RESTAURANT_MENU_ITEMS)));
+  }
+
+  public static RestaurantMenuRevised makeAjantaRestaurantRevisedEvent() {
+    return new RestaurantMenuRevised().withMenu(new Menu__1().withMenuItems(RestaurantEventMapper.fromMenuItems(AJANTA_RESTAURANT_MENU_ITEMS)));
   }
 }

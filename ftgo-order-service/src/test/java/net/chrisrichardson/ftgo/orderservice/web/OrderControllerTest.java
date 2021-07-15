@@ -3,6 +3,8 @@ package net.chrisrichardson.ftgo.orderservice.web;
 import io.eventuate.common.json.mapper.JSonMapper;
 import net.chrisrichardson.ftgo.common.CommonJsonMapperInitializer;
 import net.chrisrichardson.ftgo.orderservice.OrderDetailsMother;
+import net.chrisrichardson.ftgo.orderservice.api.events.OrderState;
+import net.chrisrichardson.ftgo.orderservice.domain.Order;
 import net.chrisrichardson.ftgo.orderservice.domain.OrderRepository;
 import net.chrisrichardson.ftgo.orderservice.domain.OrderService;
 import org.junit.Before;
@@ -14,60 +16,74 @@ import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder;
 import java.util.Optional;
 
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
-import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.CHICKEN_VINDALOO_ORDER;
-import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.CHICKEN_VINDALOO_ORDER_TOTAL;
+import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class OrderControllerTest {
 
-  private OrderService orderService;
-  private OrderRepository orderRepository;
-  private OrderController orderController;
+    private OrderService orderService;
+    private OrderRepository orderRepository;
+    private OrderController orderController;
 
-  @Before
-  public void setUp() {
-    orderService = mock(OrderService.class);
-    orderRepository = mock(OrderRepository.class);
-    orderController = new OrderController(orderService, orderRepository);
-  }
+    @Before
+    public void setUp() {
+        orderService = mock(OrderService.class);
+        orderRepository = mock(OrderRepository.class);
+        orderController = new OrderController(orderService, orderRepository);
+    }
 
 
-  @Test
-  public void shouldFindOrder() {
+    @Test
+    public void shouldFindOrder() {
 
-    when(orderRepository.findById(1L)).thenReturn(Optional.of(CHICKEN_VINDALOO_ORDER));
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(CHICKEN_VINDALOO_ORDER));
 
-    given().
-            standaloneSetup(configureControllers(orderController)).
-    when().
-            get("/orders/1").
-    then().
-            statusCode(200).
-            body("orderId", equalTo(new Long(OrderDetailsMother.ORDER_ID).intValue())).
-            body("state", equalTo(OrderDetailsMother.CHICKEN_VINDALOO_ORDER_STATE.name())).
-            body("orderTotal", equalTo(CHICKEN_VINDALOO_ORDER_TOTAL.asString()))
-    ;
-  }
+        given().
+                       standaloneSetup(configureControllers(orderController)).
+                       when().
+                       get("/orders/1").
+                       then().
+                       statusCode(200).
+                       body("orderId", equalTo(Long.valueOf(OrderDetailsMother.ORDER_ID).intValue())).
+                       body("state", equalTo(OrderDetailsMother.CHICKEN_VINDALOO_ORDER_STATE.name())).
+                       body("orderTotal", equalTo(CHICKEN_VINDALOO_ORDER_TOTAL.asString()))
+        ;
+    }
 
-  @Test
-  public void shouldFindNotOrder() {
-    when(orderRepository.findById(1L)).thenReturn(Optional.empty());
+    @Test
+    public void shouldFindNotOrder() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-    given().
-            standaloneSetup(configureControllers(new OrderController(orderService, orderRepository))).
-    when().
-            get("/orders/1").
-    then().
-            statusCode(404)
-    ;
-  }
+        given().
+                       standaloneSetup(configureControllers(new OrderController(orderService, orderRepository))).
+                       when().
+                       get("/orders/1").
+                       then().
+                       statusCode(404)
+        ;
+    }
 
-  private StandaloneMockMvcBuilder configureControllers(Object... controllers) {
-    CommonJsonMapperInitializer.registerMoneyModule();
-    MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(JSonMapper.objectMapper);
-    return MockMvcBuilders.standaloneSetup(controllers).setMessageConverters(converter);
-  }
+
+    @Test
+    public void shouldCancelOrder() {
+        when(orderService.cancel(1L)).thenReturn(CHICKEN_VINDALOO_ORDER);
+        given().
+                       standaloneSetup(configureControllers(orderController)).
+                       when().
+                       post("/orders/1/cancel").
+                       then().
+                       statusCode(200).
+                       body("orderId", equalTo(Long.valueOf(ORDER_ID).intValue())).
+                       body("state", equalTo(OrderDetailsMother.CHICKEN_VINDALOO_ORDER_STATE.name())).
+                       body("orderTotal", equalTo(CHICKEN_VINDALOO_ORDER_TOTAL.asString()));
+    }
+
+    private StandaloneMockMvcBuilder configureControllers(Object... controllers) {
+        CommonJsonMapperInitializer.registerMoneyModule();
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(JSonMapper.objectMapper);
+        return MockMvcBuilders.standaloneSetup(controllers).setMessageConverters(converter);
+    }
 
 }

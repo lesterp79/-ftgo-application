@@ -34,9 +34,23 @@ public class OrderEventConsumerTest {
             aggregate("net.chrisrichardson.ftgo.restaurantservice.domain.Restaurant", AJANTA_ID).
             publishes(RestaurantMother.makeAjantaRestaurantCreatedEvent()).
     then().
-       verify(() -> {
-         verify(orderService).createMenu(AJANTA_ID, AJANTA_RESTAURANT_NAME, RestaurantMother.AJANTA_RESTAURANT_MENU_ITEMS);
-       })
+       verify(() -> verify(orderService).createMenu(AJANTA_ID, AJANTA_RESTAURANT_NAME, RestaurantMother.AJANTA_RESTAURANT_MENU_ITEMS))
+    ;
+
+  }
+
+  @Test
+  public void shouldReviseMenu() {
+
+    CommonJsonMapperInitializer.registerMoneyModule();
+
+    given().
+                   eventHandlers(orderEventConsumer.domainEventHandlers()).
+                   when().
+                   aggregate("net.chrisrichardson.ftgo.restaurantservice.domain.Restaurant", AJANTA_ID).
+                   publishes(RestaurantMother.makeAjantaRestaurantRevisedEvent()).
+                   then().
+                   verify(() -> verify(orderService).reviseMenu(AJANTA_ID, RestaurantMother.AJANTA_RESTAURANT_MENU_ITEMS))
     ;
 
   }
