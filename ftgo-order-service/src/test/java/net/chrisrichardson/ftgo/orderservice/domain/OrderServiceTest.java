@@ -1,31 +1,29 @@
 package net.chrisrichardson.ftgo.orderservice.domain;
 
+import io.eventuate.tram.events.aggregates.ResultWithDomainEvents;
 import io.eventuate.tram.events.publisher.DomainEventPublisher;
 import io.eventuate.tram.sagas.orchestration.SagaInstanceFactory;
 import net.chrisrichardson.ftgo.orderservice.OrderDetailsMother;
 import net.chrisrichardson.ftgo.orderservice.RestaurantMother;
 import net.chrisrichardson.ftgo.orderservice.api.events.OrderCreatedEvent;
+import net.chrisrichardson.ftgo.orderservice.api.events.OrderDomainEvent;
 import net.chrisrichardson.ftgo.orderservice.sagas.cancelorder.CancelOrderSaga;
+import net.chrisrichardson.ftgo.orderservice.sagas.cancelorder.CancelOrderSagaData;
 import net.chrisrichardson.ftgo.orderservice.sagas.createorder.CreateOrderSaga;
 import net.chrisrichardson.ftgo.orderservice.sagas.createorder.CreateOrderSagaState;
 import net.chrisrichardson.ftgo.orderservice.sagas.reviseorder.ReviseOrderSaga;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.Optional;
 
-import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.CHICKEN_VINDALOO_MENU_ITEMS_AND_QUANTITIES;
-import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.CHICKEN_VINDALOO_ORDER_DETAILS;
-import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.CONSUMER_ID;
-import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.ORDER_ID;
+import static net.chrisrichardson.ftgo.orderservice.OrderDetailsMother.*;
 import static net.chrisrichardson.ftgo.orderservice.RestaurantMother.AJANTA_ID;
 import static net.chrisrichardson.ftgo.orderservice.RestaurantMother.AJANTA_RESTAURANT;
 import static org.mockito.Matchers.same;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class OrderServiceTest {
 
@@ -38,6 +36,7 @@ public class OrderServiceTest {
   private CancelOrderSaga cancelOrderSaga;
   private ReviseOrderSaga reviseOrderSaga;
   private OrderDomainEventPublisher orderAggregateEventPublisher;
+  private CancelOrderSagaData cancelOrderSagaData;
 
   @Before
   public void setup() {
@@ -48,7 +47,7 @@ public class OrderServiceTest {
     createOrderSaga = mock(CreateOrderSaga.class);
     cancelOrderSaga = mock(CancelOrderSaga.class);
     reviseOrderSaga = mock(ReviseOrderSaga.class);
-
+    cancelOrderSagaData = mock(CancelOrderSagaData.class);
     // Mock DomainEventPublisher AND use the real OrderDomainEventPublisher
 
     orderAggregateEventPublisher = mock(OrderDomainEventPublisher.class);
@@ -77,6 +76,18 @@ public class OrderServiceTest {
     verify(sagaInstanceFactory).create(createOrderSaga, new CreateOrderSagaState(ORDER_ID, CHICKEN_VINDALOO_ORDER_DETAILS));
   }
 
-  // TODO write tests for other methods
+  @Test
+  public void shouldCancelOrder() {
+    OrderService orderServiceSpy = spy(orderService);
+
+    when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(CHICKEN_VINDALOO_ORDER));
+
+    when(orderServiceSpy.getSagaData(ORDER_ID, CHICKEN_VINDALOO_ORDER)).thenReturn(cancelOrderSagaData);
+
+    Assert.assertSame(orderServiceSpy.cancel(ORDER_ID), CHICKEN_VINDALOO_ORDER);
+
+    verify(sagaInstanceFactory).create(cancelOrderSaga, cancelOrderSagaData);
+
+  }
 
 }

@@ -83,9 +83,30 @@ public class CreateOrderSagaTest {
         failureReply().
     expect().
         command(new RejectOrderCommand(ORDER_ID)).
-        to(OrderServiceChannels.COMMAND_CHANNEL);
+        to(OrderServiceChannels.COMMAND_CHANNEL)
+        ;
   }
 
+  @Test
+  public void shouldRejectDueToFailedTicketCreation() {
+    given()
+      .saga(makeCreateOrderSaga(),
+              new CreateOrderSagaState(ORDER_ID, CHICKEN_VINDALOO_ORDER_DETAILS))
+      .expect()
+        .command(makeValidateOrderByConsumer())
+        .to(ConsumerServiceChannels.consumerServiceChannel)
+      .andGiven()
+        .successReply()
+      .expect()
+        .command(new CreateTicket(AJANTA_ID, ORDER_ID, null /* FIXME */))
+        .to(KitchenServiceChannels.COMMAND_CHANNEL)
+      .andGiven()
+        .failureReply()
+      .expect()
+        .command(new RejectOrderCommand(ORDER_ID))
+        .to(OrderServiceChannels.COMMAND_CHANNEL)
+    ;
+  }
   @Test
   public void shouldRejectDueToFailedAuthorizxation() {
     given()

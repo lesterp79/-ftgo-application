@@ -14,6 +14,7 @@ import net.chrisrichardson.ftgo.orderservice.sagas.createorder.CreateOrderSagaSt
 import net.chrisrichardson.ftgo.orderservice.sagas.reviseorder.ReviseOrderSaga;
 import net.chrisrichardson.ftgo.orderservice.sagas.reviseorder.ReviseOrderSagaData;
 import net.chrisrichardson.ftgo.orderservice.web.MenuItemIdAndQuantity;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
@@ -116,9 +117,14 @@ public class OrderService {
   public Order cancel(Long orderId) {
     Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException(orderId));
-    CancelOrderSagaData sagaData = new CancelOrderSagaData(order.getConsumerId(), orderId, order.getOrderTotal());
+    CancelOrderSagaData sagaData = getSagaData(orderId, order);
     sagaInstanceFactory.create(cancelOrderSaga, sagaData);
     return order;
+  }
+
+  @NotNull
+  CancelOrderSagaData getSagaData(Long orderId, Order order) {
+    return new CancelOrderSagaData(order.getConsumerId(), orderId, order.getOrderTotal());
   }
 
   private Order updateOrder(long orderId, Function<Order, List<OrderDomainEvent>> updater) {
